@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useGroup } from "@/lib/useGroups";
-import { computeNetBalances, simplifyDebts } from "@/lib/balance";
+import { computeNetBalances, simplifyDebts, rawPairwiseDebts } from "@/lib/balance";
 import { CATEGORY_META, type Category } from "@/lib/types";
 import { MemberAvatar, MemberStack } from "@/components/MemberAvatar";
 import { CategoryIcon } from "@/components/CategoryIcon";
@@ -223,6 +223,8 @@ function BalancesTab({
   onSettle: () => void;
 }) {
   const balances = computeNetBalances(group.members, group.expenses, group.settlements);
+  const raw = rawPairwiseDebts(group.members, group.expenses, group.settlements);
+  const [view, setView] = useState<"simplified" | "raw">("simplified");
 
   if (edges.length === 0) {
     return (
@@ -234,31 +236,64 @@ function BalancesTab({
     );
   }
 
+  const saved = Math.max(0, raw.length - edges.length);
+  const list = view === "simplified" ? edges : raw;
+
   return (
     <div className="space-y-4">
-      <div className="bg-gradient-card border border-primary/20 rounded-2xl p-4 flex items-start gap-3">
-        <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-        <div className="flex-1 text-sm">
-          <p className="font-semibold">Simplified to {edges.length} {edges.length === 1 ? "payment" : "payments"}</p>
-          <p className="text-muted-foreground text-xs mt-0.5">Fewest transactions to clear all debts.</p>
+      {/* Before/After magic banner */}
+      {saved > 0 && (
+        <div className="rounded-2xl p-4 bg-gradient-hero text-white shadow-lift relative overflow-hidden animate-pop-in">
+          <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative flex items-center gap-3">
+            <Sparkles className="h-5 w-5" />
+            <div className="flex-1">
+              <p className="font-bold text-sm">Simplified {raw.length} debts → {edges.length} payments</p>
+              <p className="text-xs opacity-90 mt-0.5">Saved everyone {saved} {saved === 1 ? "transaction" : "transactions"}.</p>
+            </div>
+            <Button size="sm" onClick={onSettle} className="bg-white/20 hover:bg-white/30 backdrop-blur text-white border-0 rounded-lg font-semibold">
+              Settle
+            </Button>
+          </div>
+          <div className="relative mt-3 grid grid-cols-2 gap-2 text-[11px]">
+            <div className="bg-white/10 rounded-lg px-2.5 py-1.5">
+              <p className="opacity-70 uppercase tracking-wider font-semibold">Before</p>
+              <p className="font-mono-num font-bold text-lg">{raw.length}</p>
+            </div>
+            <div className="bg-white/20 rounded-lg px-2.5 py-1.5">
+              <p className="opacity-90 uppercase tracking-wider font-semibold">After</p>
+              <p className="font-mono-num font-bold text-lg">{edges.length}</p>
+            </div>
+          </div>
         </div>
-        <Button size="sm" onClick={onSettle} className="bg-gradient-hero hover:opacity-90 text-white rounded-lg font-semibold">
-          Settle
-        </Button>
+      )}
+
+      {/* Toggle */}
+      <div className="flex gap-1 bg-secondary/60 p-1 rounded-xl">
+        <button onClick={() => setView("simplified")}
+          className={cn("flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+            view === "simplified" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground")}>
+          ✨ Simplified ({edges.length})
+        </button>
+        <button onClick={() => setView("raw")}
+          className={cn("flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+            view === "raw" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground")}>
+          🧾 Raw debts ({raw.length})
+        </button>
       </div>
 
       <div className="space-y-2">
-        {edges.map((e, i) => {
+        {list.map((e, i) => {
           const from = memberById(e.from);
           const to = memberById(e.to);
           if (!from || !to) return null;
           return (
-            <div key={i} className="card-surface p-4 flex items-center gap-3 animate-float-up" style={{ animationDelay: `${i * 0.04}s` }}>
+            <div key={`${view}-${i}`} className="card-surface p-4 flex items-center gap-3 animate-float-up" style={{ animationDelay: `${i * 0.04}s` }}>
               <MemberAvatar member={from} size="md" />
               <div className="flex-1">
                 <p className="text-sm">
                   <span className="font-semibold">{from.id === group.meMemberId ? "You" : from.name}</span>
-                  <span className="text-muted-foreground"> pay </span>
+                  <span className="text-muted-foreground"> {from.id === group.meMemberId ? "pay" : "pays"} </span>
                   <span className="font-semibold">{to.id === group.meMemberId ? "you" : to.name}</span>
                 </p>
               </div>
