@@ -1,1 +1,13 @@
 project_id = "wtcjkbvihpwyqdvfllec"
+
+[functions.categorize-expense]
+verify_jwt = false
+
+[functions.parse-expense-nl]
+verify_jwt = false
+
+[functions.spending-insights]
+verify_jwt = false
+
+[functions.extract-receipt]
+verify_jwt = false
