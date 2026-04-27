@@ -103,3 +103,42 @@ export function pairwiseBalances(
   const net = computeNetBalances(members, expenses, settlements);
   return simplifyDebts(net);
 }
+
+/**
+ * Compute the RAW set of pairwise debts implied by every expense + settlement,
+ * BEFORE simplification. Used to show "before vs after" in the UI.
+ * Edges between the same pair are aggregated and netted (positive direction only).
+ */
+export function rawPairwiseDebts(
+  members: Member[],
+  expenses: Expense[],
+  settlements: Settlement[],
+): DebtEdge[] {
+  // map "from->to" => amount
+  const pair: Record<string, number> = {};
+  const key = (a: string, b: string) => `${a}>${b}`;
+
+  for (const exp of expenses) {
+    for (const split of exp.splits) {
+      if (split.memberId === exp.paidBy) continue;
+      pair[key(split.memberId, exp.paidBy)] = (pair[key(split.memberId, exp.paidBy)] || 0) + split.amount;
+    }
+  }
+  for (const s of settlements) {
+    pair[key(s.fromMemberId, s.toMemberId)] = (pair[key(s.fromMemberId, s.toMemberId)] || 0) - s.amount;
+  }
+
+  // Net opposing edges between same pair
+  const seen = new Set<string>();
+  const edges: DebtEdge[] = [];
+  for (const k of Object.keys(pair)) {
+    if (seen.has(k)) continue;
+    const [from, to] = k.split(">");
+    const reverse = key(to, from);
+    seen.add(k); seen.add(reverse);
+    const net = (pair[k] || 0) - (pair[reverse] || 0);
+    if (net > 0.01) edges.push({ from, to, amount: round2(net) });
+    else if (net < -0.01) edges.push({ from: to, to: from, amount: round2(-net) });
+  }
+  return edges.sort((a, b) => b.amount - a.amount);
+}
