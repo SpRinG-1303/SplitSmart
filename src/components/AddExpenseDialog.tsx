@@ -8,8 +8,8 @@ import { MemberAvatar } from "@/components/MemberAvatar";
 import { CATEGORIES, CATEGORY_META, type Category, type SplitType, type Group } from "@/lib/types";
 import { computeSplits, round2 } from "@/lib/balance";
 import { store } from "@/lib/store";
-import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Loader2, Camera, X, AlertCircle } from "lucide-react";
+import { categorize, parseNaturalLanguage } from "@/lib/smartParser";
+import { Sparkles, Loader2, X, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -25,24 +25,19 @@ export function AddExpenseDialog({ open, onOpenChange, group }: Props) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [category, setCategory] = useState<Category>("Other");
-  const [categorizing, setCategorizing] = useState(false);
   const [paidBy, setPaidBy] = useState(group.meMemberId);
   const [splitType, setSplitType] = useState<SplitType>("equal");
   const [selectedIds, setSelectedIds] = useState<string[]>(group.members.map((m) => m.id));
   const [customAmounts, setCustomAmounts] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
-  const [receiptLoading, setReceiptLoading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const titleBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCategorizedTitle = useRef<string>("");
 
   const reset = () => {
     setNlText(""); setTitle(""); setAmount(""); setCategory("Other");
     setPaidBy(group.meMemberId); setSplitType("equal");
     setSelectedIds(group.members.map((m) => m.id));
-    setCustomAmounts({}); setNotes(""); setReceiptPreview(null);
+    setCustomAmounts({}); setNotes("");
     setDate(new Date().toISOString().slice(0, 10));
     lastCategorizedTitle.current = "";
   };
@@ -64,88 +59,52 @@ export function AddExpenseDialog({ open, onOpenChange, group }: Props) {
   const isValid = title.trim() && numAmount > 0 && selectedIds.length > 0 &&
     (splitType === "equal" || Math.abs(splitDiff) < 0.05);
 
-  const triggerCategorize = async (t: string) => {
-    if (!t.trim() || t === lastCategorizedTitle.current) return;
-    lastCategorizedTitle.current = t;
-    setCategorizing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("categorize-expense", { body: { title: t } });
-      if (!error && data?.category) setCategory(data.category as Category);
-    } catch (e) {
-      // silent fallback
-    } finally {
-      setCategorizing(false);
-    }
-  };
+  // Live categorization as the user types (debounced)
+  useEffect(() => {
+    const t = title.trim();
+    if (!t || t === lastCategorizedTitle.current) return;
+    const timer = setTimeout(() => {
+      const cat = categorize(t);
+      // Only override if user hasn't manually picked a non-Other category recently
+      setCategory((prev) => (prev === "Other" || prev === lastCategoryFromAuto.current ? cat : prev));
+      lastCategoryFromAuto.current = cat;
+      lastCategorizedTitle.current = t;
+    }, 250);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title]);
 
-  const handleTitleBlur = () => {
-    if (titleBlurTimer.current) clearTimeout(titleBlurTimer.current);
-    titleBlurTimer.current = setTimeout(() => triggerCategorize(title.trim()), 150);
-  };
+  const lastCategoryFromAuto = useRef<Category>("Other");
 
-  const handleNlSubmit = async () => {
+  const handleNlSubmit = () => {
     const text = nlText.trim();
     if (!text) return;
     setNlLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("parse-expense-nl", {
-        body: { text, members: group.members.map((m) => ({ id: m.id, name: m.name })) },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setTitle(data.title || "");
-      setAmount(String(data.amount || ""));
-      setCategory((data.category as Category) || "Other");
-      lastCategorizedTitle.current = data.title || "";
-      const validPaidBy = group.members.find((m) => m.id === data.paidBy);
-      if (validPaidBy) setPaidBy(validPaidBy.id);
-      const validSplit = (data.splitWith || []).filter((id: string) => group.members.some((m) => m.id === id));
-      if (validSplit.length) setSelectedIds(validSplit);
-      setSplitType(data.splitType === "exact" || data.splitType === "percentage" ? data.splitType : "equal");
-      toast.success("AI filled the form ✨");
-      setNlText("");
-    } catch (e: any) {
-      toast.error(e?.message || "Couldn't parse that. Try filling manually.");
-    } finally {
-      setNlLoading(false);
-    }
-  };
-
-  const handleReceiptUpload = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image too large (max 5MB)");
-      return;
-    }
-    setReceiptLoading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        setReceiptPreview(base64);
-        try {
-          const { data, error } = await supabase.functions.invoke("extract-receipt", {
-            body: { imageBase64: base64 },
-          });
-          if (error) throw error;
-          if (data?.error) throw new Error(data.error);
-          if (data?.title) setTitle(data.title);
-          if (data?.amount) setAmount(String(data.amount));
-          if (data?.category) {
-            setCategory(data.category as Category);
-            lastCategorizedTitle.current = data.title || "";
-          }
-          toast.success("Receipt scanned ✨");
-        } catch (e: any) {
-          toast.error(e?.message || "Could not read receipt");
-        } finally {
-          setReceiptLoading(false);
+    // Brief artificial delay just to let the shimmer show — feels intentional
+    setTimeout(() => {
+      try {
+        const parsed = parseNaturalLanguage(text, group.members, group.meMemberId);
+        if (!parsed) {
+          toast.error("Couldn't find an amount. Try: 'Pizza ₹800 with Aman'");
+          setNlLoading(false);
+          return;
         }
-      };
-      reader.onerror = () => { setReceiptLoading(false); toast.error("Failed to read file"); };
-      reader.readAsDataURL(file);
-    } catch (e) {
-      setReceiptLoading(false);
-    }
+        setTitle(parsed.title);
+        setAmount(String(parsed.amount));
+        setCategory(parsed.category);
+        lastCategoryFromAuto.current = parsed.category;
+        lastCategorizedTitle.current = parsed.title;
+        setPaidBy(parsed.paidBy);
+        setSelectedIds(parsed.splitWith);
+        setSplitType(parsed.splitType);
+        toast.success("Form filled ✨");
+        setNlText("");
+      } catch (e: any) {
+        toast.error("Parsing failed");
+      } finally {
+        setNlLoading(false);
+      }
+    }, 280);
   };
 
   const handleSave = () => {
@@ -160,7 +119,6 @@ export function AddExpenseDialog({ open, onOpenChange, group }: Props) {
       splits,
       notes: notes.trim() || undefined,
       date: new Date(date).toISOString(),
-      receiptUrl: receiptPreview || undefined,
     });
     toast.success("Expense added");
     onOpenChange(false);
@@ -188,7 +146,7 @@ export function AddExpenseDialog({ open, onOpenChange, group }: Props) {
         </div>
 
         <div className="overflow-y-auto p-5 space-y-5 flex-1">
-          {/* AI Input bar */}
+          {/* Smart text bar */}
           <div className="space-y-2">
             <div className={cn(
               "relative rounded-2xl bg-gradient-card border border-primary/20 p-1 transition-all",
@@ -200,7 +158,7 @@ export function AddExpenseDialog({ open, onOpenChange, group }: Props) {
                   value={nlText}
                   onChange={(e) => setNlText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleNlSubmit(); } }}
-                  placeholder="Try: Pizza ₹800 split with Aman and Priya"
+                  placeholder={`Try: Pizza ${group.currency}800 split with ${group.members.filter(m => m.id !== group.meMemberId)[0]?.name ?? "Aman"}`}
                   disabled={nlLoading}
                   className="border-0 bg-transparent focus-visible:ring-0 px-1 h-10 text-sm placeholder:text-muted-foreground/70"
                 />
@@ -222,25 +180,17 @@ export function AddExpenseDialog({ open, onOpenChange, group }: Props) {
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Title</label>
             <div className="flex gap-2 mt-2">
-              <div className="relative">
-                <CategoryIcon category={category} size="md" />
-                {categorizing && (
-                  <div className="absolute -top-1 -right-1 h-4 w-4 bg-primary rounded-full flex items-center justify-center">
-                    <Loader2 className="h-3 w-3 text-white animate-spin" />
-                  </div>
-                )}
-              </div>
+              <CategoryIcon category={category} size="md" />
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                onBlur={handleTitleBlur}
                 placeholder="What was it for?"
                 className="rounded-xl h-11 flex-1"
               />
             </div>
             <div className="flex flex-wrap gap-1 mt-2">
               {CATEGORIES.map((c) => (
-                <button key={c} type="button" onClick={() => setCategory(c)}
+                <button key={c} type="button" onClick={() => { setCategory(c); lastCategoryFromAuto.current = c; }}
                   className={cn(
                     "text-[10px] font-semibold px-2 py-1 rounded-full transition-all",
                     category === c ? "bg-primary text-white" : "bg-secondary text-muted-foreground hover:bg-muted"
@@ -349,37 +299,15 @@ export function AddExpenseDialog({ open, onOpenChange, group }: Props) {
             )}
           </div>
 
-          {/* Receipt + Notes + Date */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-2 h-11 rounded-xl" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Receipt</label>
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => {
-                const f = e.target.files?.[0]; if (f) handleReceiptUpload(f);
-              }} />
-              {receiptPreview ? (
-                <div className="relative mt-2 h-11 rounded-xl border border-border overflow-hidden">
-                  <img src={receiptPreview} alt="Receipt" className="h-full w-full object-cover" />
-                  <button onClick={() => setReceiptPreview(null)} className="absolute top-1 right-1 h-5 w-5 rounded-full bg-background/80 flex items-center justify-center">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : (
-                <Button type="button" variant="outline" onClick={() => fileRef.current?.click()} disabled={receiptLoading}
-                  className="mt-2 w-full h-11 rounded-xl gap-1.5 font-medium">
-                  {receiptLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                  <span className="text-xs">{receiptLoading ? "Reading..." : "Scan"}</span>
-                </Button>
-              )}
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notes</label>
+              <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" className="mt-2 h-11 rounded-xl" />
             </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notes (optional)</label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="..." rows={2} className="mt-2 rounded-xl resize-none" />
           </div>
         </div>
 
