@@ -126,10 +126,9 @@ export const personalStore = {
   },
 };
 
-export function usePersonal() {
-  if (typeof window === "undefined") return read();
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useEffect, useState } = require("react");
+import { useEffect, useState } from "react";
+
+export function usePersonal(): PersonalShape {
   const [data, setData] = useState<PersonalShape>(() => read());
   useEffect(() => {
     const h = () => setData(read());
