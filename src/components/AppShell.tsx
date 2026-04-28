@@ -1,4 +1,4 @@
-import { ReactNode, useState, useRef, useEffect } from "react";
+import { ReactNode, useState, useRef, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sparkles, LayoutDashboard, Wallet, Receipt, ArrowLeftRight,
@@ -41,33 +41,35 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
   const notifRef = useRef<HTMLDivElement>(null);
 
   // Build notifications from groups data
-  const notifications = (() => {
-    const items: { id: string; text: string; sub: string; type: "debt" | "expense" }[] = [];
-    for (const g of groups) {
-      // Recent expenses (last 3 days)
-      const recent = g.expenses
-        .filter((e) => (Date.now() - +new Date(e.date)) < 3 * 86400000)
-        .slice(0, 2);
-      for (const e of recent) {
-        const payer = g.members.find((m) => m.id === e.paidBy);
-        const payerLabel = payer?.id === g.meMemberId ? "You" : payer?.name ?? "Someone";
-        items.push({ id: e.id, text: `${payerLabel} added "${e.title}"`, sub: `${g.name} · ${g.currency}${e.amount.toFixed(0)}`, type: "expense" });
-      }
-      // Unsettled debts involving me
-      const net = computeNetBalances(g.members, g.expenses, g.settlements);
-      const edges = simplifyDebts(net);
-      for (const edge of edges) {
-        if (edge.from === g.meMemberId) {
-          const to = g.members.find((m) => m.id === edge.to);
-          if (to) items.push({ id: `debt-${g.id}-${edge.to}`, text: `You owe ${to.name} ${g.currency}${edge.amount.toFixed(0)}`, sub: g.name, type: "debt" });
-        } else if (edge.to === g.meMemberId) {
-          const from = g.members.find((m) => m.id === edge.from);
-          if (from) items.push({ id: `debt-${g.id}-${edge.from}`, text: `${from.name} owes you ${g.currency}${edge.amount.toFixed(0)}`, sub: g.name, type: "debt" });
+  const notifications = useMemo(() => {
+    try {
+      const items: { id: string; text: string; sub: string; type: "debt" | "expense" }[] = [];
+      for (const g of groups) {
+        const recent = g.expenses
+          .filter((e) => (Date.now() - +new Date(e.date)) < 3 * 86400000)
+          .slice(0, 2);
+        for (const e of recent) {
+          const payer = g.members.find((m) => m.id === e.paidBy);
+          const payerLabel = payer?.id === g.meMemberId ? "You" : payer?.name ?? "Someone";
+          items.push({ id: e.id, text: `${payerLabel} added "${e.title}"`, sub: `${g.name} · ${g.currency}${e.amount.toFixed(0)}`, type: "expense" });
+        }
+        const net = computeNetBalances(g.members, g.expenses, g.settlements);
+        const edges = simplifyDebts(net);
+        for (const edge of edges) {
+          if (edge.from === g.meMemberId) {
+            const to = g.members.find((m) => m.id === edge.to);
+            if (to) items.push({ id: `debt-${g.id}-${edge.to}`, text: `You owe ${to.name} ${g.currency}${edge.amount.toFixed(0)}`, sub: g.name, type: "debt" });
+          } else if (edge.to === g.meMemberId) {
+            const from = g.members.find((m) => m.id === edge.from);
+            if (from) items.push({ id: `debt-${g.id}-${edge.from}`, text: `${from.name} owes you ${g.currency}${edge.amount.toFixed(0)}`, sub: g.name, type: "debt" });
+          }
         }
       }
+      return items.slice(0, 8);
+    } catch {
+      return [];
     }
-    return items.slice(0, 8);
-  })();
+  }, [groups]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
