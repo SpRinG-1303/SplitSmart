@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Zap, TrendingUp, Brain, Receipt, Users, Check, Star } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, TrendingUp, Brain, Receipt, Users, Check } from "lucide-react";
 
 export default function Cover() {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ export default function Cover() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
 
-      {/* ── NAV ── */}
+      {/* NAV */}
       <nav className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 glass border-b border-border/40">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-xl bg-gradient-hero flex items-center justify-center shadow-glow">
@@ -42,10 +42,10 @@ export default function Cover() {
         </button>
       </nav>
 
-      {/* ── HERO ── */}
+      {/* HERO */}
       <section ref={heroRef} className="relative min-h-screen flex flex-col items-center justify-center pt-16 overflow-hidden">
 
-        {/* Animated background orbs */}
+        {/* Background orbs */}
         <div className="absolute inset-0 pointer-events-none">
           <div
             className="absolute w-[700px] h-[700px] rounded-full opacity-25 blur-[120px]"
@@ -76,10 +76,9 @@ export default function Cover() {
           />
         </div>
 
-        {/* Grid pattern overlay */}
         <div className="absolute inset-0 grid-pattern opacity-[0.03] pointer-events-none" />
 
-        {/* Floating particles */}
+        {/* Particles */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {[...Array(12)].map((_, i) => (
             <div
@@ -153,23 +152,6 @@ export default function Cover() {
             No credit card · No signup required · Works offline
           </p>
 
-          {/* Social proof */}
-          <div className="mt-8 flex items-center gap-3 animate-float-up" style={{ animationDelay: "0.36s" }}>
-            <div className="flex -space-x-2">
-              {["🧑‍💻", "👩‍🎨", "🧑‍🍳", "👩‍🚀", "🧑‍🎤"].map((e, i) => (
-                <div key={i} className="h-8 w-8 rounded-full glass border-2 border-background flex items-center justify-center text-sm">
-                  {e}
-                </div>
-              ))}
-            </div>
-            <div className="text-left">
-              <div className="flex items-center gap-0.5">
-                {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 fill-warning text-warning" />)}
-              </div>
-              <p className="text-xs text-muted-foreground">Loved by 2,000+ groups</p>
-            </div>
-          </div>
-
           {/* Floating UI cards */}
           <div className="mt-16 relative w-full max-w-3xl h-64 hidden md:block animate-float-up" style={{ animationDelay: "0.4s" }}>
             <FloatingCard
@@ -183,7 +165,7 @@ export default function Cover() {
               emoji="🍕" title="Dinner at Smoke House" amt="₹1,200" sub="Auto-tagged · Food" accent="coral"
             />
             <FloatingCard
-              className="absolute left-1/2 top-20 z-20 scale-110"
+              className="absolute left-1/2 top-20 z-20"
               style={{ transform: `translateX(-50%) scale(1.1) translate(${parallaxX * 0.05}px, ${parallaxY * 0.05}px)`, transition: "transform 0.08s ease-out" }}
               emoji="✨" title="Aman pays Priya" amt="₹650" sub="Settles 3 debts at once" accent="primary"
             />
@@ -199,9 +181,7 @@ export default function Cover() {
         </div>
       </section>
 
-
-
-      {/* ── FEATURES ── */}
+      {/* FEATURES */}
       <section id="features" className="py-24 px-6 max-w-5xl mx-auto">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
@@ -240,7 +220,7 @@ export default function Cover() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
+      {/* HOW IT WORKS */}
       <section id="how" className="py-24 px-6 bg-card/30 border-y border-border">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -250,7 +230,6 @@ export default function Cover() {
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-8 relative">
-            {/* Connector line */}
             <div className="hidden md:block absolute top-10 left-[20%] right-[20%] h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
             <Step n="1" icon={<Users className="h-6 w-6" />} title="Create a group" desc="Pick an emoji, add member names. Done in 10 seconds." color="hsl(252 95% 65%)" />
             <Step n="2" icon={<Receipt className="h-6 w-6" />} title="Add expenses" desc="Type naturally or fill the form. AI tags each one instantly." color="hsl(178 95% 45%)" />
@@ -259,7 +238,7 @@ export default function Cover() {
         </div>
       </section>
 
-      {/* ── PRICING ── */}
+      {/* PRICING */}
       <section id="pricing" className="py-24 px-6 max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight">
@@ -307,7 +286,7 @@ export default function Cover() {
         </div>
       </section>
 
-      {/* ── FINAL CTA ── */}
+      {/* FINAL CTA */}
       <section className="py-24 px-6 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-pink-500/5" />
@@ -320,7 +299,7 @@ export default function Cover() {
             <span className="gradient-text">doing the math?</span>
           </h2>
           <p className="mt-5 text-muted-foreground text-lg">
-            Join thousands of groups who've settled up without the awkwardness.
+            Start splitting smarter — no awkward conversations needed.
           </p>
           <button
             onClick={() => navigate("/login")}
@@ -332,7 +311,7 @@ export default function Cover() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/* FOOTER */}
       <footer className="border-t border-border py-8 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -340,7 +319,7 @@ export default function Cover() {
               <Sparkles className="h-3 w-3 text-white" />
             </div>
             <span className="font-semibold text-foreground">SplitSmart</span>
-            <span>· Built with ❤️</span>
+            <span>· Built with love</span>
           </div>
           <p>No accounts required · No ads · No nonsense.</p>
         </div>
