@@ -12,7 +12,7 @@ import { CreateGroupDialog } from "@/components/CreateGroupDialog";
 import { SettleUpDialog } from "@/components/SettleUpDialog";
 import { generateInsights } from "@/lib/smartParser";
 import { store } from "@/lib/store";
-import { CATEGORY_META, type Category, type Group } from "@/lib/types";
+import { type Category, type Group } from "@/lib/types";
 import {
   ArrowUpRight, ArrowDownRight, Calendar, Download, Plus,
   Sparkles, TrendingUp, Send, ChevronRight, Lightbulb,
@@ -413,62 +413,18 @@ function BalancesPanel({
 }
 
 function BudgetProgressCard({ className, delay }: { className?: string; delay: number }) {
-  // Pull from personalStore
-  const personal = (() => {
-    try { return JSON.parse(localStorage.getItem("splitsmart_personal_v1") || "{}"); } catch { return {}; }
-  })();
-  const budgets: { category: Category; monthlyLimit: number }[] = personal.budgets ?? [];
-  const expenses: { category: Category; amount: number; date: string }[] = personal.expenses ?? [];
-  const monthStart = startOfMonth(new Date()).toISOString();
-  const spentByCat: Record<string, number> = {};
-  for (const e of expenses) {
-    if (e.date >= monthStart) spentByCat[e.category] = (spentByCat[e.category] || 0) + e.amount;
-  }
-
   return (
     <div className={cn("card-surface p-5 card-lift animate-float-up", className)} style={{ animationDelay: `${delay}s` }}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold">Budget Progress</h3>
         <Link to="/personal?tab=budgets" className="text-xs font-semibold text-primary hover:underline">View all</Link>
       </div>
-      {budgets.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground">
-          <p>No budgets set yet</p>
-          <Link to="/personal?tab=budgets" className="text-primary font-semibold text-xs hover:underline mt-1 inline-block">
-            Create your first budget →
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {budgets.slice(0, 3).map((b) => {
-            const spent = spentByCat[b.category] || 0;
-            const pct = Math.min(100, Math.round((spent / b.monthlyLimit) * 100));
-            const tone = pct >= 90 ? "destructive" : pct >= 70 ? "warning" : "primary";
-            return (
-              <div key={b.category}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">{CATEGORY_META[b.category].emoji}</span>
-                    <span className="text-sm font-semibold">{b.category}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-mono-num font-bold text-sm">{pct}%</span>
-                    <span className="font-mono-num text-xs text-muted-foreground ml-2">₹{b.monthlyLimit.toFixed(0)}</span>
-                  </div>
-                </div>
-                <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                  <div className={cn("h-full rounded-full transition-all duration-700",
-                    tone === "destructive" && "bg-destructive",
-                    tone === "warning" && "bg-warning",
-                    tone === "primary" && "bg-gradient-violet",
-                  )} style={{ width: `${pct}%` }} />
-                </div>
-                <p className="text-[10px] text-muted-foreground font-mono-num mt-1">₹{spent.toFixed(0)} spent</p>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <div className="py-8 text-center text-sm text-muted-foreground">
+        <p>No budgets set yet</p>
+        <Link to="/personal?tab=budgets" className="text-primary font-semibold text-xs hover:underline mt-1 inline-block">
+          Create your first budget →
+        </Link>
+      </div>
     </div>
   );
 }
