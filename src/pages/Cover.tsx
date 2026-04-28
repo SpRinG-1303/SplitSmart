@@ -19,9 +19,8 @@ export default function Cover() {
           <img
             src="/logo.png"
             alt="SplitSmart"
-            className="h-24 w-auto drop-shadow-xl"
+            className="h-40 w-auto"
             onError={(e) => {
-              // fallback if logo not yet added
               (e.target as HTMLImageElement).style.display = "none";
             }}
           />
