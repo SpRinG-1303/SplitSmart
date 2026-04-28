@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sparkles, LayoutDashboard, Wallet, Receipt, ArrowLeftRight,
@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { useGroups } from "@/lib/useGroups";
 import { store } from "@/lib/store";
+import { computeNetBalances, simplifyDebts } from "@/lib/balance";
 import { CreateGroupDialog } from "@/components/CreateGroupDialog";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,45 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
   const meName = store.getMeName();
   const [createOpen, setCreateOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Build notifications from groups data
+  const notifications = (() => {
+    const items: { id: string; text: string; sub: string; type: "debt" | "expense" }[] = [];
+    for (const g of groups) {
+      // Recent expenses (last 3 days)
+      const recent = g.expenses
+        .filter((e) => (Date.now() - +new Date(e.date)) < 3 * 86400000)
+        .slice(0, 2);
+      for (const e of recent) {
+        const payer = g.members.find((m) => m.id === e.paidBy);
+        const payerLabel = payer?.id === g.meMemberId ? "You" : payer?.name ?? "Someone";
+        items.push({ id: e.id, text: `${payerLabel} added "${e.title}"`, sub: `${g.name} · ${g.currency}${e.amount.toFixed(0)}`, type: "expense" });
+      }
+      // Unsettled debts involving me
+      const net = computeNetBalances(g.members, g.expenses, g.settlements);
+      const edges = simplifyDebts(net);
+      for (const edge of edges) {
+        if (edge.from === g.meMemberId) {
+          const to = g.members.find((m) => m.id === edge.to);
+          if (to) items.push({ id: `debt-${g.id}-${edge.to}`, text: `You owe ${to.name} ${g.currency}${edge.amount.toFixed(0)}`, sub: g.name, type: "debt" });
+        } else if (edge.to === g.meMemberId) {
+          const from = g.members.find((m) => m.id === edge.from);
+          if (from) items.push({ id: `debt-${g.id}-${edge.from}`, text: `${from.name} owes you ${g.currency}${edge.amount.toFixed(0)}`, sub: g.name, type: "debt" });
+        }
+      }
+    }
+    return items.slice(0, 8);
+  })();
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const isActive = (to: string) => {
     const [path] = to.split("?");
@@ -204,10 +244,47 @@ export function AppShell({ children, title }: { children: ReactNode; title?: str
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button className="relative h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors">
-                <Bell className="h-4 w-4 text-muted-foreground" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive" />
-              </button>
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={() => setNotifOpen((o) => !o)}
+                  className="relative h-9 w-9 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors"
+                >
+                  <Bell className="h-4 w-4 text-muted-foreground" />
+                  {notifications.length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive" />
+                  )}
+                </button>
+                {notifOpen && (
+                  <div className="absolute right-0 top-11 w-80 card-surface border border-border rounded-2xl shadow-xl z-50 overflow-hidden animate-float-up">
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <span className="font-bold text-sm">Notifications</span>
+                      {notifications.length > 0 && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-destructive text-white">{notifications.length}</span>
+                      )}
+                    </div>
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">You're all caught up ✨</div>
+                    ) : (
+                      <div className="divide-y divide-border max-h-72 overflow-y-auto">
+                        {notifications.map((n) => (
+                          <div key={n.id} className="px-4 py-3 flex items-start gap-3 hover:bg-secondary/40 transition-colors">
+                            <div className={cn(
+                              "mt-0.5 h-7 w-7 rounded-lg flex items-center justify-center text-sm shrink-0",
+                              n.type === "debt" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+                            )}>
+                              {n.type === "debt" ? "💸" : "🧾"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium leading-snug">{n.text}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{n.sub}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <ThemeToggle />
               <div className="hidden sm:flex items-center gap-2 pl-2 ml-1 border-l border-border">
                 <div className="h-8 w-8 rounded-full bg-gradient-violet flex items-center justify-center text-white text-xs font-bold shadow-glow">

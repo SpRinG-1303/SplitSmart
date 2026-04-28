@@ -12,7 +12,7 @@ export interface PaymentSettings {
 const KEY = "splitsmart_payment_settings_v1";
 
 const DEFAULTS: PaymentSettings = {
-  razorpayKeyId: "",
+  razorpayKeyId: import.meta.env.VITE_RAZORPAY_KEY_ID ?? "",
   upiId: "",
   payeeName: "",
   paymentLink: "",
@@ -22,7 +22,13 @@ export function getPaymentSettings(): PaymentSettings {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return DEFAULTS;
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    const saved = JSON.parse(raw);
+    return {
+      ...DEFAULTS,
+      ...saved,
+      // always fall back to env key if localStorage has nothing
+      razorpayKeyId: saved.razorpayKeyId || DEFAULTS.razorpayKeyId,
+    };
   } catch {
     return DEFAULTS;
   }

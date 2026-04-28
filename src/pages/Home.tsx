@@ -122,7 +122,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
           <BudgetProgressCard className="lg:col-span-4" delay={0.35} />
           <WhoOwesWhom className="lg:col-span-4" stats={stats} delay={0.4} />
-          <AIAssistantCard className="lg:col-span-4" delay={0.45} />
+          <AIAssistantCard className="lg:col-span-4" delay={0.45} stats={stats} groups={groups} />
         </div>
 
         {/* Tip footer */}
@@ -186,7 +186,6 @@ function StatCard({
   gradient: "violet" | "coral" | "mint";
   delay: number;
 }) {
-  const positive = change >= 0;
   const grads = {
     violet: { stroke: "hsl(258 100% 75%)", glow: "shadow-glow", bar: "bg-primary/15 text-primary" },
     coral:  { stroke: "hsl(354 90% 68%)",  glow: "shadow-glow-coral", bar: "bg-destructive/15 text-destructive" },
@@ -487,13 +486,79 @@ function WhoOwesWhom({ className, stats, delay }: { className?: string; stats: R
   );
 }
 
-function AIAssistantCard({ className, delay }: { className?: string; delay: number }) {
+function answerQuery(q: string, stats: ReturnType<typeof computeStats>, groups: Group[]): string {
+  const lower = q.toLowerCase();
+  const { catTotals, total, totalOwed, totalOwing, topBalances, spentMonth } = stats;
+  const meName = store.getMeName();
+
+  if (total === 0 && groups.length === 0)
+    return "You don't have any expenses yet. Create a group and add expenses to get insights!";
+
+  if (lower.includes("most") && (lower.includes("spend") || lower.includes("spent") || lower.includes("category"))) {
+    const top = (Object.entries(catTotals) as [Category, number][]).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    if (!top.length) return "No expenses recorded yet.";
+    const [cat, val] = top[0];
+    const pct = Math.round((val / total) * 100);
+    return `Your top category is ${cat} at ₹${val.toFixed(0)} (${pct}% of total spending).`;
+  }
+
+  if (lower.includes("trend") || lower.includes("month")) {
+    if (spentMonth === 0) return "No spending recorded this month yet.";
+    return `You've spent ₹${spentMonth.toFixed(0)} this month across ${groups.reduce((s, g) => s + g.expenses.length, 0)} expenses.`;
+  }
+
+  if (lower.includes("owe") && (lower.includes("who") || lower.includes("most"))) {
+    const owes = topBalances.filter((b) => b.direction === "owed");
+    if (!owes.length) return "Nobody owes you anything right now — all settled up! ✨";
+    const top = owes.sort((a, b) => b.amount - a.amount)[0];
+    return `${top.member.name} owes you the most: ₹${top.amount.toFixed(0)}.`;
+  }
+
+  if (lower.includes("owe") || lower.includes("balance")) {
+    if (totalOwing === 0 && totalOwed === 0) return "You're fully settled up across all groups! ✨";
+    const parts = [];
+    if (totalOwing > 0) parts.push(`you owe ₹${totalOwing.toFixed(0)}`);
+    if (totalOwed > 0) parts.push(`you're owed ₹${totalOwed.toFixed(0)}`);
+    return `Overall, ${parts.join(" and ")}.`;
+  }
+
+  if (lower.includes("group")) {
+    if (!groups.length) return "You have no groups yet. Create one to start splitting!";
+    return `You have ${groups.length} group${groups.length > 1 ? "s" : ""}: ${groups.map((g) => g.name).join(", ")}.`;
+  }
+
+  if (lower.includes("total") || lower.includes("how much")) {
+    if (total === 0) return "No expenses recorded yet.";
+    return `Your total tracked spending is ₹${total.toFixed(0)} across all groups.`;
+  }
+
+  // Fallback: summary
+  if (total === 0) return "Add some expenses to your groups and I can give you insights!";
+  const topCat = (Object.entries(catTotals) as [Category, number][]).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])[0];
+  return `You've spent ₹${total.toFixed(0)} total. Top category: ${topCat?.[0] ?? "N/A"}. Net balance: ${totalOwed - totalOwing >= 0 ? "+" : ""}₹${(totalOwed - totalOwing).toFixed(0)}.`;
+}
+
+function AIAssistantCard({ className, delay, stats, groups }: {
+  className?: string;
+  delay: number;
+  stats: ReturnType<typeof computeStats>;
+  groups: Group[];
+}) {
   const [q, setQ] = useState("");
+  const [answer, setAnswer] = useState<string | null>(null);
   const suggestions = [
     "What did I spend the most on?",
     "Show my spending trends",
     "Who owes me the most?",
   ];
+
+  const handleSubmit = (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    setAnswer(answerQuery(trimmed, stats, groups));
+    setQ("");
+  };
+
   return (
     <div className={cn("card-surface p-5 card-lift animate-float-up flex flex-col", className)} style={{ animationDelay: `${delay}s` }}>
       <div className="flex items-center gap-2 mb-3">
@@ -504,26 +569,37 @@ function AIAssistantCard({ className, delay }: { className?: string; delay: numb
         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gradient-coral text-white">BETA</span>
       </div>
       <p className="text-xs text-muted-foreground mb-3">Ask me anything about your expenses</p>
-      <div className="space-y-2 flex-1">
-        {suggestions.map((s) => (
-          <button
-            key={s}
-            onClick={() => setQ(s)}
-            className="w-full text-left text-xs px-3 py-2 rounded-lg bg-secondary/60 hover:bg-secondary hover:text-foreground text-muted-foreground transition-colors flex items-center gap-2"
-          >
-            <Sparkles className="h-3 w-3 text-primary shrink-0" />
-            <span>{s}</span>
-          </button>
-        ))}
-      </div>
+      {answer ? (
+        <div className="flex-1 rounded-xl bg-gradient-card border border-primary/15 p-3 text-sm leading-relaxed mb-3">
+          <p>{answer}</p>
+          <button onClick={() => setAnswer(null)} className="mt-2 text-xs text-primary hover:underline">Ask another</button>
+        </div>
+      ) : (
+        <div className="space-y-2 flex-1">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              onClick={() => handleSubmit(s)}
+              className="w-full text-left text-xs px-3 py-2 rounded-lg bg-secondary/60 hover:bg-secondary hover:text-foreground text-muted-foreground transition-colors flex items-center gap-2"
+            >
+              <Sparkles className="h-3 w-3 text-primary shrink-0" />
+              <span>{s}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="mt-3 flex items-center gap-2 bg-secondary/60 rounded-xl px-3 py-2 border border-border focus-within:border-primary transition-colors">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSubmit(q)}
           placeholder="Ask anything..."
           className="bg-transparent flex-1 text-sm outline-none placeholder:text-muted-foreground"
         />
-        <button className="h-7 w-7 rounded-lg bg-gradient-violet text-white flex items-center justify-center hover:opacity-90 shadow-glow shrink-0">
+        <button
+          onClick={() => handleSubmit(q)}
+          className="h-7 w-7 rounded-lg bg-gradient-violet text-white flex items-center justify-center hover:opacity-90 shadow-glow shrink-0"
+        >
           <Send className="h-3 w-3" />
         </button>
       </div>
