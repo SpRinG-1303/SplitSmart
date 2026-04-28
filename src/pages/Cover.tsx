@@ -14,37 +14,27 @@ export default function Cover() {
       />
 
       <div className="relative flex flex-col items-center gap-8 px-6 text-center animate-float-up">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-4">
-          <img
-            src="/logo.png"
-            alt="SplitSmart"
-            className="h-40 w-auto"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-          <div>
-            <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight gradient-text">
-              SplitSmart
-            </h1>
-            <p className="mt-2 text-muted-foreground text-lg">
-              Split expenses. Not friendships.
-            </p>
-          </div>
-        </div>
+        {/* Logo only — no text, bg removed */}
+        <img
+          src="/logo.png"
+          alt="SplitSmart"
+          className="h-64 md:h-72 w-auto mix-blend-normal"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+
+        <p className="text-muted-foreground text-lg -mt-4">
+          Split expenses. Not friendships.
+        </p>
 
         {/* CTA */}
-        <div className="flex flex-col sm:flex-row gap-3 mt-4">
-          <Button
-            onClick={() => navigate("/login")}
-            size="lg"
-            className="bg-gradient-hero hover:opacity-90 text-white font-semibold shadow-lift gap-2 h-12 px-8 rounded-xl"
-          >
-            Get Started
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <Button
+          onClick={() => navigate("/login")}
+          size="lg"
+          className="bg-gradient-hero hover:opacity-90 text-white font-semibold shadow-lift gap-2 h-12 px-8 rounded-xl"
+        >
+          Get Started
+          <ArrowRight className="h-4 w-4" />
+        </Button>
 
         <p className="text-xs text-muted-foreground">
           Built for the way you actually spend money.
