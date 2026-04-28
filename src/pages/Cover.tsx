@@ -199,22 +199,7 @@ export default function Cover() {
         </div>
       </section>
 
-      {/* ── STATS STRIP ── */}
-      <section className="border-y border-border bg-card/50 backdrop-blur-sm py-8">
-        <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { val: "₹2Cr+", label: "Expenses tracked" },
-            { val: "50K+", label: "Debts simplified" },
-            { val: "2,000+", label: "Groups created" },
-            { val: "100%", label: "Free forever" },
-          ].map((s) => (
-            <div key={s.label}>
-              <p className="font-mono-num font-extrabold text-3xl gradient-text">{s.val}</p>
-              <p className="text-xs text-muted-foreground mt-1 font-medium">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+
 
       {/* ── FEATURES ── */}
       <section id="features" className="py-24 px-6 max-w-5xl mx-auto">
