@@ -25,6 +25,7 @@ export default function Login() {
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        window.dispatchEvent(new CustomEvent("splitsmart:change"));
         navigate("/app");
 
       } else if (mode === "signup") {

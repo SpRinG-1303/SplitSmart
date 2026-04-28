@@ -1,7 +1,20 @@
 import type { Group, Member, Expense, Settlement, ActivityEvent, Category, SplitType } from "./types";
 import { MEMBER_COLORS } from "./types";
 
-const STORAGE_KEY = "splitsmart_v1";
+function getStorageKey(): string {
+  try {
+    const session = JSON.parse(
+      localStorage.getItem("sb-enqezarpamdfxlfuakfh-auth-token") ||
+      sessionStorage.getItem("sb-enqezarpamdfxlfuakfh-auth-token") ||
+      "{}"
+    );
+    const uid = session?.user?.id;
+    if (uid) return `splitsmart_v1_${uid}`;
+  } catch {}
+  return "splitsmart_v1";
+}
+
+const STORAGE_KEY = "splitsmart_v1"; // legacy fallback
 
 interface StoreShape {
   groups: Group[];
@@ -10,7 +23,8 @@ interface StoreShape {
 
 function read(): StoreShape {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = getStorageKey();
+    const raw = localStorage.getItem(key);
     if (!raw) return { groups: [], meName: "You" };
     return JSON.parse(raw);
   } catch {
@@ -19,8 +33,7 @@ function read(): StoreShape {
 }
 
 function write(s: StoreShape) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  // notify listeners
+  localStorage.setItem(getStorageKey(), JSON.stringify(s));
   window.dispatchEvent(new CustomEvent("splitsmart:change"));
 }
 
