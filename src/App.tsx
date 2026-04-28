@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme";
 import { supabase } from "@/integrations/supabase/client";
+import { store } from "@/lib/store";
 import Cover from "./pages/Cover.tsx";
 import Login from "./pages/Login.tsx";
 import Home from "./pages/Home.tsx";
