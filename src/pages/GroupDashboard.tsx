@@ -126,17 +126,17 @@ export default function GroupDashboard() {
           {tab === "insights" && <InsightsTab group={group} />}
           {tab === "activity" && <ActivityTab group={group} />}
         </div>
-      </main>
+      </div>
 
       {/* FAB */}
       <button onClick={() => setAddOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-hero text-white shadow-lift hover:scale-105 transition-transform flex items-center justify-center z-40 shadow-glow">
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-violet text-white shadow-glow hover:scale-105 transition-transform flex items-center justify-center z-40">
         <Plus className="h-6 w-6" strokeWidth={2.5} />
       </button>
 
       <AddExpenseDialog open={addOpen} onOpenChange={setAddOpen} group={group} />
       <SettleUpDialog open={settleOpen} onOpenChange={setSettleOpen} group={group} />
-    </div>
+    </AppShell>
   );
 }
 
