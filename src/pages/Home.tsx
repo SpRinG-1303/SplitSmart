@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useGroups } from "@/lib/useGroups";
+import { usePersonal } from "@/lib/personalStore";
 import { computeNetBalances, simplifyDebts } from "@/lib/balance";
 import { MemberAvatar } from "@/components/MemberAvatar";
 import { CategoryIcon } from "@/components/CategoryIcon";
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 
 export default function Home() {
   const groups = useGroups();
+  const personal = usePersonal();
   const navigate = useNavigate();
   const meName = store.getMeName();
   const [createOpen, setCreateOpen] = useState(false);
@@ -120,7 +122,7 @@ export default function Home() {
 
         {/* Third row: Budget progress + Who owes whom + AI assistant */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
-          <BudgetProgressCard className="lg:col-span-4" delay={0.35} />
+          <BudgetProgressCard className="lg:col-span-4" delay={0.35} personal={personal} />
           <WhoOwesWhom className="lg:col-span-4" stats={stats} delay={0.4} />
           <AIAssistantCard className="lg:col-span-4" delay={0.45} stats={stats} groups={groups} />
         </div>
@@ -403,19 +405,58 @@ function BalancesPanel({
   );
 }
 
-function BudgetProgressCard({ className, delay }: { className?: string; delay: number }) {
+function BudgetProgressCard({ className, delay, personal }: {
+  className?: string;
+  delay: number;
+  personal: ReturnType<typeof usePersonal>;
+}) {
+  const monthStart = startOfMonth(new Date()).toISOString();
+  const monthlyTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const e of personal.expenses) {
+      if (e.date >= monthStart) totals[e.category] = (totals[e.category] ?? 0) + e.amount;
+    }
+    return totals;
+  }, [personal.expenses, monthStart]);
+
   return (
     <div className={cn("card-surface p-5 card-lift animate-float-up", className)} style={{ animationDelay: `${delay}s` }}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold">Budget Progress</h3>
         <Link to="/personal?tab=budgets" className="text-xs font-semibold text-primary hover:underline">View all</Link>
       </div>
-      <div className="py-8 text-center text-sm text-muted-foreground">
-        <p>No budgets set yet</p>
-        <Link to="/personal?tab=budgets" className="text-primary font-semibold text-xs hover:underline mt-1 inline-block">
-          Create your first budget →
-        </Link>
-      </div>
+      {personal.budgets.length === 0 ? (
+        <div className="py-8 text-center text-sm text-muted-foreground">
+          <p>No budgets set yet</p>
+          <Link to="/personal?tab=budgets" className="text-primary font-semibold text-xs hover:underline mt-1 inline-block">
+            Create your first budget →
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {personal.budgets.slice(0, 4).map((b) => {
+            const spent = monthlyTotals[b.category] ?? 0;
+            const pct = Math.min(100, (spent / b.monthlyLimit) * 100);
+            const over = spent > b.monthlyLimit;
+            return (
+              <div key={b.category}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold text-xs">{b.category}</span>
+                  <span className={cn("font-mono-num text-xs", over ? "text-destructive font-bold" : "text-muted-foreground")}>
+                    ₹{spent.toFixed(0)} / ₹{b.monthlyLimit.toFixed(0)}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-full transition-all", over ? "bg-destructive" : "")}
+                    style={{ width: `${pct}%`, background: over ? undefined : `hsl(var(--cat-${b.category.toLowerCase()}))` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
