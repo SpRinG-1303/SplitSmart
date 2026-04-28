@@ -18,7 +18,18 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (session?.user) {
+        // Seed name from auth metadata if store still has default
+        const current = store.getMeName();
+        if (current === "You" || current === "") {
+          const authName =
+            session.user.user_metadata?.full_name ||
+            session.user.email?.split("@")[0] ||
+            "You";
+          store.setMeName(authName);
+        }
+      }
       window.dispatchEvent(new CustomEvent("splitsmart:change"));
     });
     return () => subscription.unsubscribe();

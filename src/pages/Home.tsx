@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -26,15 +26,23 @@ export default function Home() {
   const meName = store.getMeName();
   const [createOpen, setCreateOpen] = useState(false);
   const [settleGroup, setSettleGroup] = useState<Group | null>(null);
+  const [clock, setClock] = useState(() => new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const stats = useMemo(() => computeStats(groups), [groups]);
 
   const greeting = (() => {
-    const h = new Date().getHours();
+    const h = clock.getHours();
     if (h < 12) return "Good morning";
     if (h < 18) return "Good afternoon";
     return "Good evening";
   })();
+
+  const timeStr = clock.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
   return (
     <AppShell title="Dashboard">
@@ -42,13 +50,15 @@ export default function Home() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 animate-float-up">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight flex items-center gap-2">
-              {greeting}, {meName}!{" "}
-              <span className="inline-block animate-pulse">👋</span>
+            <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight">
+              {greeting}, {meName}!
             </h1>
             <p className="text-muted-foreground text-sm mt-1">Here's your expense overview</p>
           </div>
           <div className="flex items-center gap-2">
+            <div className="card-surface px-3.5 py-2 flex items-center gap-2">
+              <span className="font-mono-num font-bold text-sm tabular-nums">{timeStr}</span>
+            </div>
             <button className="card-surface px-3.5 py-2 flex items-center gap-2 text-sm hover:bg-secondary/50 transition-colors">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="font-semibold">{format(startOfMonth(new Date()), "MMM d")} – {format(new Date(), "MMM d, yyyy")}</span>
