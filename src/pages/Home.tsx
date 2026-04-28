@@ -695,12 +695,21 @@ function computeStats(groups: Group[]) {
     for (const e of edges) {
       if (e.from === g.meMemberId) {
         const m = g.members.find((mm) => mm.id === e.to)!;
-        const k = m.name;
+        if (!m) continue;
+        const k = m.id;
         memberBalances[k] = { member: m, amount: (memberBalances[k]?.amount ?? 0) + e.amount, direction: "owes" };
       } else if (e.to === g.meMemberId) {
         const m = g.members.find((mm) => mm.id === e.from)!;
-        const k = m.name;
+        if (!m) continue;
+        const k = m.id;
         memberBalances[k] = { member: m, amount: (memberBalances[k]?.amount ?? 0) + e.amount, direction: "owed" };
+      }
+    }
+    // Also include members with zero balance so they appear in WhoOwesWhom
+    for (const m of g.members) {
+      if (m.id === g.meMemberId) continue;
+      if (!memberBalances[m.id]) {
+        memberBalances[m.id] = { member: m, amount: 0, direction: "owed" };
       }
     }
   }
