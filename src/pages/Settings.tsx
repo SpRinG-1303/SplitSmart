@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TopNav } from "@/components/TopNav";
+import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,9 +26,8 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <TopNav />
-      <main className="container max-w-2xl pt-8 space-y-6">
+    <AppShell title="Settings">
+      <main className="px-5 lg:px-8 py-6 max-w-2xl mx-auto pb-20 space-y-6">
         <div className="animate-float-up">
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Settings</p>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mt-1">Make it yours.</h1>
@@ -123,11 +122,11 @@ export default function Settings() {
             </div>
           </div>
 
-          <Button onClick={save} className="w-full mt-5 bg-gradient-hero hover:opacity-90 text-white font-semibold rounded-xl">
+          <Button onClick={save} className="w-full mt-5 bg-gradient-violet hover:opacity-90 text-white font-semibold rounded-xl shadow-glow">
             Save settings
           </Button>
         </section>
       </main>
-    </div>
+    </AppShell>
   );
 }

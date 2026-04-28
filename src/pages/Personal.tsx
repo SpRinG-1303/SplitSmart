@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { TopNav } from "@/components/TopNav";
+import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,9 +52,8 @@ export default function Personal() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <TopNav />
-      <main className="container max-w-3xl pt-8">
+    <AppShell title="Personal">
+      <main className="px-5 lg:px-8 py-6 max-w-[1600px] mx-auto pb-32">
         <div className="animate-float-up">
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Personal tracker</p>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mt-1">Your money, mapped.</h1>
@@ -68,7 +67,7 @@ export default function Personal() {
         </div>
 
         {/* Tabs */}
-        <div className="mt-6 flex gap-1 bg-secondary/60 p-1 rounded-xl">
+        <div className="mt-6 flex gap-1 bg-secondary/60 p-1 rounded-xl max-w-2xl">
           {tabs.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={cn(
@@ -91,7 +90,7 @@ export default function Personal() {
 
       <button
         onClick={() => (tab === "goals" ? setGoalOpen(true) : setAddOpen(true))}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-hero text-white shadow-lift hover:scale-105 transition-transform flex items-center justify-center z-40 shadow-glow"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-violet text-white shadow-glow hover:scale-105 transition-transform flex items-center justify-center z-40"
         aria-label={tab === "goals" ? "Add goal" : "Add expense"}
       >
         <Plus className="h-6 w-6" strokeWidth={2.5} />
@@ -99,7 +98,7 @@ export default function Personal() {
 
       <AddPersonalExpenseDialog open={addOpen} onOpenChange={setAddOpen} />
       <AddGoalDialog open={goalOpen} onOpenChange={setGoalOpen} />
-    </div>
+    </AppShell>
   );
 }
 

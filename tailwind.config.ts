@@ -58,6 +58,11 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+          elevated: "hsl(var(--card-elevated))",
+        },
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar))",
+          border: "hsl(var(--sidebar-border))",
         },
         category: {
           food: "hsl(var(--cat-food))",
@@ -72,7 +77,10 @@ export default {
       },
       backgroundImage: {
         'gradient-hero': 'var(--gradient-hero)',
+        'gradient-violet': 'var(--gradient-violet)',
+        'gradient-coral': 'var(--gradient-coral)',
         'gradient-mint': 'var(--gradient-mint)',
+        'gradient-ocean': 'var(--gradient-ocean)',
         'gradient-sunset': 'var(--gradient-sunset)',
         'gradient-card': 'var(--gradient-card)',
       },
@@ -81,6 +89,8 @@ export default {
         lift: 'var(--shadow-lift)',
         modal: 'var(--shadow-modal)',
         glow: 'var(--shadow-glow)',
+        'glow-coral': 'var(--shadow-glow-coral)',
+        'glow-mint': 'var(--shadow-glow-mint)',
       },
       borderRadius: {
         lg: "var(--radius)",

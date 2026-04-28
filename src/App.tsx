@@ -12,24 +12,34 @@ import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <ThemeProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Sonner position="top-center" richColors theme="system" />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/app" element={<Home />} />
-            <Route path="/personal" element={<Personal />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/group/:id" element={<GroupDashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+import { useEffect } from "react";
+import { personalStore } from "@/lib/personalStore";
+import { store } from "@/lib/store";
+
+const App = () => {
+  useEffect(() => {
+    store.seedIfEmpty();
+    personalStore.seedIfEmpty();
+  }, []);
+  return (
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner position="top-center" richColors theme="system" />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/app" element={<Home />} />
+              <Route path="/personal" element={<Personal />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/group/:id" element={<GroupDashboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;

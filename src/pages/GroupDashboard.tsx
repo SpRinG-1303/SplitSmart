@@ -15,6 +15,7 @@ import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { store } from "@/lib/store";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/AppShell";
 
 type Tab = "expenses" | "balances" | "insights" | "activity";
 
@@ -28,12 +29,14 @@ export default function GroupDashboard() {
 
   if (!group) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Group not found.</p>
-          <Button onClick={() => navigate("/app")} variant="outline">Back home</Button>
+      <AppShell>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-muted-foreground mb-4">Group not found.</p>
+            <Button onClick={() => navigate("/app")} variant="outline">Back home</Button>
+          </div>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
@@ -51,16 +54,12 @@ export default function GroupDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      {/* Top nav */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/75 border-b border-border">
-        <div className="container max-w-3xl flex items-center justify-between h-16">
-          <Link to="/app" className="flex items-center gap-2 group">
-            <div className="h-8 w-8 rounded-lg hover:bg-secondary flex items-center justify-center -ml-1">
-              <ArrowLeft className="h-4 w-4" />
-            </div>
-            <span className="text-xl">{group.emoji}</span>
-            <span className="font-bold truncate max-w-[180px]">{group.name}</span>
+    <AppShell title={group.name}>
+      <div className="px-5 lg:px-8 py-6 max-w-5xl mx-auto pb-32">
+        {/* Inline back + delete bar */}
+        <div className="flex items-center justify-between mb-5">
+          <Link to="/app" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-4 w-4" /> Back to dashboard
           </Link>
           <Button variant="ghost" size="sm" onClick={() => {
             if (confirm(`Delete ${group.name}? This can't be undone.`)) {
@@ -72,9 +71,6 @@ export default function GroupDashboard() {
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-      </header>
-
-      <main className="container max-w-3xl pt-6">
         {/* Hero card */}
         <div
           className="rounded-3xl p-6 text-white relative overflow-hidden animate-float-up"
@@ -130,17 +126,17 @@ export default function GroupDashboard() {
           {tab === "insights" && <InsightsTab group={group} />}
           {tab === "activity" && <ActivityTab group={group} />}
         </div>
-      </main>
+      </div>
 
       {/* FAB */}
       <button onClick={() => setAddOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-hero text-white shadow-lift hover:scale-105 transition-transform flex items-center justify-center z-40 shadow-glow">
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-gradient-violet text-white shadow-glow hover:scale-105 transition-transform flex items-center justify-center z-40">
         <Plus className="h-6 w-6" strokeWidth={2.5} />
       </button>
 
       <AddExpenseDialog open={addOpen} onOpenChange={setAddOpen} group={group} />
       <SettleUpDialog open={settleOpen} onOpenChange={setSettleOpen} group={group} />
-    </div>
+    </AppShell>
   );
 }
 
