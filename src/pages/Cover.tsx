@@ -24,9 +24,12 @@ export default function Cover() {
       {/* NAV */}
       <nav className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 glass border-b border-border/40">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-xl bg-gradient-hero flex items-center justify-center shadow-glow">
-            <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
-          </div>
+          <img
+            src="/logo.png"
+            alt="SplitSmart Logo"
+            className="h-8 w-auto"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          />
           <span className="font-extrabold text-lg tracking-tight">SplitSmart</span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
