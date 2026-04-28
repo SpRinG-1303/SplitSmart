@@ -14,7 +14,7 @@ import { generateInsights } from "@/lib/smartParser";
 import { store } from "@/lib/store";
 import { type Category, type Group } from "@/lib/types";
 import {
-  ArrowUpRight, ArrowDownRight, Calendar, Download, Plus,
+  Calendar, Download, Plus,
   Sparkles, TrendingUp, Send, ChevronRight, Lightbulb,
 } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday, startOfMonth, subDays } from "date-fns";
@@ -75,7 +75,6 @@ export default function Home() {
             className="lg:col-span-3"
             label="Spent This Month"
             value={stats.spentMonth}
-            change={stats.spentChange}
             sparklineData={stats.monthSpark}
             gradient="violet"
             delay={0}
@@ -84,7 +83,6 @@ export default function Home() {
             className="lg:col-span-3"
             label="You Owe"
             value={stats.totalOwing}
-            change={-8}
             sparklineData={stats.owingSpark}
             gradient="coral"
             delay={0.05}
@@ -93,7 +91,6 @@ export default function Home() {
             className="lg:col-span-3"
             label="You're Owed"
             value={stats.totalOwed}
-            change={24}
             sparklineData={stats.owedSpark}
             gradient="mint"
             delay={0.1}
@@ -180,12 +177,11 @@ export default function Home() {
 /* ================================================================ */
 
 function StatCard({
-  className, label, value, change, sparklineData, gradient, delay,
+  className, label, value, sparklineData, gradient, delay,
 }: {
   className?: string;
   label: string;
   value: number;
-  change: number;
   sparklineData: number[];
   gradient: "violet" | "coral" | "mint";
   delay: number;
@@ -213,11 +209,7 @@ function StatCard({
           decimals={0}
           className="font-mono-num font-extrabold text-3xl block mt-1.5"
         />
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold", g.bar)}>
-            {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-            {Math.abs(change)}% vs last month
-          </div>
+        <div className="mt-3 flex items-center justify-end">
           <Sparkline
             data={sparklineData}
             width={70}
@@ -430,7 +422,7 @@ function BudgetProgressCard({ className, delay }: { className?: string; delay: n
 }
 
 function WhoOwesWhom({ className, stats, delay }: { className?: string; stats: ReturnType<typeof computeStats>; delay: number }) {
-  const { orbitNodes, meColor } = stats;
+  const { orbitNodes } = stats;
   const meName = store.getMeName();
 
   return (
@@ -617,11 +609,10 @@ function computeStats(groups: Group[]) {
     ? "Create your first group to start tracking and see AI-powered insights here."
     : "Add a few expenses to unlock personalized insights.";
 
-  const spentChange = 12; // demo
+  const spentChange = 0;
 
   return {
     totalOwed, totalOwing, catTotals, total, spentMonth, monthSpark, owingSpark, owedSpark,
-    topBalances, primaryGroup, orbitNodes, youNet, topInsight, spentChange,
-    meColor: "245 100% 70%",
+    topBalances, primaryGroup, orbitNodes, youNet, topInsight,
   };
 }
