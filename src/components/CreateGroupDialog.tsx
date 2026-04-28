@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { GROUP_EMOJIS, GROUP_COLORS } from "@/lib/types";
+import { GROUP_TAGS, GROUP_COLORS } from "@/lib/types";
 import { store } from "@/lib/store";
 import type { Group } from "@/lib/types";
 import { ArrowLeft, ArrowRight, X, Plus, Sparkles } from "lucide-react";
@@ -17,7 +17,7 @@ interface Props {
 export function CreateGroupDialog({ open, onOpenChange, onCreated }: Props) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("🏖️");
+  const [tag, setTag] = useState("Trip");
   const [color, setColor] = useState(GROUP_COLORS[0].token);
   const [meName, setMeName] = useState(store.getMeName() || "You");
   const [memberInput, setMemberInput] = useState("");
@@ -25,7 +25,7 @@ export function CreateGroupDialog({ open, onOpenChange, onCreated }: Props) {
   const [currency, setCurrency] = useState("₹");
 
   const reset = () => {
-    setStep(1); setName(""); setEmoji("🏖️"); setColor(GROUP_COLORS[0].token);
+    setStep(1); setName(""); setTag("Trip"); setColor(GROUP_COLORS[0].token);
     setMembers([]); setMemberInput(""); setCurrency("₹");
   };
 
@@ -40,7 +40,7 @@ export function CreateGroupDialog({ open, onOpenChange, onCreated }: Props) {
   const handleCreate = () => {
     const g = store.createGroup({
       name: name.trim() || "Untitled group",
-      emoji, color, currency,
+      emoji: tag, color, currency,
       memberNames: members,
       meName: meName.trim() || "You",
     });
@@ -74,19 +74,21 @@ export function CreateGroupDialog({ open, onOpenChange, onCreated }: Props) {
           {step === 1 && (
             <div className="space-y-5 animate-float-up">
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pick an emoji</label>
-                <div className="grid grid-cols-10 gap-1.5 mt-2">
-                  {GROUP_EMOJIS.map((e) => (
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Group type</label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {GROUP_TAGS.map((t) => (
                     <button
-                      key={e}
+                      key={t}
                       type="button"
-                      onClick={() => setEmoji(e)}
+                      onClick={() => setTag(t)}
                       className={cn(
-                        "aspect-square rounded-lg text-lg flex items-center justify-center transition-all",
-                        emoji === e ? "bg-primary text-white scale-110 shadow-glow" : "bg-secondary hover:bg-muted"
+                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                        tag === t
+                          ? "bg-primary text-white border-primary shadow-glow"
+                          : "bg-secondary border-border hover:border-primary/40 text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      {e}
+                      {t}
                     </button>
                   ))}
                 </div>
@@ -176,7 +178,7 @@ export function CreateGroupDialog({ open, onOpenChange, onCreated }: Props) {
               <div className="bg-gradient-card rounded-2xl p-5 mt-4">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-2">Preview</p>
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl" style={{ backgroundColor: `hsl(${color} / 0.18)` }}>{emoji}</div>
+                  <div className="h-12 px-3 rounded-2xl flex items-center justify-center text-sm font-bold" style={{ backgroundColor: `hsl(${color} / 0.18)`, color: `hsl(${color})` }}>{tag}</div>
                   <div>
                     <p className="font-bold">{name || "Your group"}</p>
                     <p className="text-xs text-muted-foreground">{members.length + 1} members · {currency}</p>

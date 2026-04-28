@@ -85,7 +85,12 @@ export const CATEGORY_META: Record<Category, { emoji: string; color: string }> =
   Other: { emoji: "💸", color: "category-other" },
 };
 
-export const GROUP_EMOJIS = ["🏖️", "🏠", "🍕", "✈️", "🎉", "🚗", "🏔️", "🏛️", "💼", "🎓", "💍", "🎂", "⛺", "🎮", "🎵", "📚", "☕", "🌮", "🏝️", "🚀"];
+export const GROUP_TAGS = [
+  "Trip", "Home", "Food", "Work", "Study",
+  "Party", "Sports", "Family", "Friends", "Flatmates",
+  "Wedding", "Holiday", "Road Trip", "Gaming", "Music",
+  "Gym", "Office", "College", "Cafe", "Other",
+];
 
 export const GROUP_COLORS = [
   { name: "Indigo", token: "245 100% 70%" },
