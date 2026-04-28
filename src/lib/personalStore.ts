@@ -32,11 +32,24 @@ export interface PersonalShape {
   goals: Goal[];
 }
 
-const KEY = "splitsmart_personal_v1";
+const BASE_KEY = "splitsmart_personal_v1";
+
+function getKey(): string {
+  try {
+    const session = JSON.parse(
+      localStorage.getItem("sb-enqezarpamdfxlfuakfh-auth-token") ||
+      sessionStorage.getItem("sb-enqezarpamdfxlfuakfh-auth-token") ||
+      "{}"
+    );
+    const uid = session?.user?.id;
+    if (uid) return `${BASE_KEY}_${uid}`;
+  } catch {}
+  return BASE_KEY;
+}
 
 function read(): PersonalShape {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(getKey());
     if (!raw) return { expenses: [], budgets: [], goals: [] };
     return JSON.parse(raw);
   } catch {
@@ -45,7 +58,7 @@ function read(): PersonalShape {
 }
 
 function write(s: PersonalShape) {
-  localStorage.setItem(KEY, JSON.stringify(s));
+  localStorage.setItem(getKey(), JSON.stringify(s));
   window.dispatchEvent(new CustomEvent("splitsmart:personal:change"));
 }
 
@@ -94,35 +107,7 @@ export const personalStore = {
     write(s);
   },
   seedIfEmpty() {
-    const s = read();
-    if (s.expenses.length || s.budgets.length || s.goals.length) return;
-    s.budgets = [
-      { category: "Food", monthlyLimit: 8000 },
-      { category: "Travel", monthlyLimit: 5000 },
-      { category: "Entertainment", monthlyLimit: 3000 },
-      { category: "Shopping", monthlyLimit: 6000 },
-    ];
-    s.goals = [
-      { id: uid(), title: "Emergency Fund", emoji: "🛟", target: 50000, saved: 18500, color: "168 100% 41%", createdAt: new Date().toISOString() },
-      { id: uid(), title: "Tokyo Trip", emoji: "🗼", target: 120000, saved: 32000, color: "330 80% 60%", createdAt: new Date().toISOString() },
-      { id: uid(), title: "New Laptop", emoji: "💻", target: 90000, saved: 67000, color: "245 100% 70%", createdAt: new Date().toISOString() },
-    ];
-    const today = new Date();
-    const mk = (d: number, title: string, amt: number, cat: Category) => ({
-      id: uid(),
-      title, amount: amt, category: cat,
-      date: new Date(today.getFullYear(), today.getMonth(), today.getDate() - d).toISOString(),
-      createdAt: new Date().toISOString(),
-    });
-    s.expenses = [
-      mk(0, "Coffee", 240, "Food"),
-      mk(1, "Metro card top-up", 500, "Travel"),
-      mk(2, "Netflix", 649, "Entertainment"),
-      mk(3, "Groceries", 2150, "Food"),
-      mk(5, "Sneakers", 4200, "Shopping"),
-      mk(8, "Pharmacy", 380, "Health"),
-    ];
-    write(s);
+    // no-op: users start with a clean slate
   },
 };
 
